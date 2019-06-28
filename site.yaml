@@ -1,0 +1,57 @@
+---
+- name: "Create VAPP"
+  hosts: target
+  gather_facts: false
+  tags: ["create"]
+  connection: local
+  environment: &environment
+    env_user: "{{ user }}"
+    env_password: "{{ password }}"
+    env_host: "{{ vcloud_url }}"
+    env_org: "{{ organization }}"
+    env_api_version: "{{ api_version }}"
+    env_verify_ssl_certs: "{{ verify_ssl_certs }}"
+  tasks:
+    - name: "Create vApp {{ vapp_name }}"
+      run_once: true
+      vcd_vapp:
+        vapp_name: "{{ vapp_name }}"
+        vdc: "{{ vdc }}"
+        network: "{{ network }}"
+        power_on: false
+        state: "present"
+      register: output
+    - name: Output
+      debug:
+        msg: "{{ output }}"
+
+
+- name: "Create VM"
+  hosts: target
+  gather_facts: false
+  tags: ["create"]
+  environment: *environment
+  connection: local
+  serial: 1
+  tasks:
+    - name: "Create VMs {{ inventory_hostname }}"
+      no_log: false
+      vcd_vapp_vm:
+        target_vm_name: "{{ inventory_hostname }}"
+        target_vapp: "{{ vapp_name }}"
+        source_vdc: "{{ vdc }}"
+        target_vdc: "{{ vdc }}"
+        source_catalog_name: "{{ catalog }}"
+        source_template_name: "{{ folder }}"
+        source_vm_name: "{{ template }}"
+        hostname: "{{ inventory_hostname }}"
+        ip_allocation_mode: "pool"
+        network: "{{ network }}"
+        state: "present"
+        power_on: true
+        all_eulas_accepted: "true"
+      register: output
+    - name: Output
+      debug:
+        msg: "{{ output }}"
+
